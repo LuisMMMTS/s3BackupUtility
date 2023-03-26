@@ -8,10 +8,16 @@ import java.nio.file.Paths;
 import java.util.stream.Stream;
 
 public class FolderCrawler {
-    public Stream<Path> createPathStream(String base_path){
+    private String basePath;
+
+    public FolderCrawler(String basePath) {
+        this.basePath = basePath;
+    }
+
+    public Stream<Path> createPathStream(){
         //From Java docs
         try {
-            return Files.walk(Paths.get(base_path));
+            return Files.walk(Paths.get(this.basePath));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

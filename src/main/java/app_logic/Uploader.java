@@ -16,9 +16,25 @@ public class Uploader {
     private final static int CHUNK_SIZE = 5 * 1024 * 1024;
 
     public static void main(String[] args) throws IOException {
-        String bucketName = "jetbrainsexecutormode18h";
-        String blob_name = "filename";
-        try (FileOutputStream in = new FileOutputStream("test.zip"); ZipOutputStream zip = new ZipOutputStream(new BufferedOutputStream(in))) {
+
+        final String usage = "\n" +
+                "Usage:\n" +
+                "    <bucketName><blobName><folderPath>\n\n" +
+                "Where:\n" +
+                "    bucketName - The Amazon S3 bucket to delete the policy from (for example, bucket1).\n"+
+                "    blobName - the filename of the S3 blob file"+
+                "    folderPath - path to the folder to be uploaded";
+
+        if (args.length != 3) {
+            System.out.println(usage);
+            System.exit(1);
+        }
+
+        String bucketName = args[0];
+        String blob_name = args[1];
+        System.setProperty("user.dir",args[2]);
+        String tempFileName= String.valueOf(System.currentTimeMillis())+".zip";
+        try (FileOutputStream in = new FileOutputStream(tempFileName); ZipOutputStream zip = new ZipOutputStream(new BufferedOutputStream(in))) {
 
             FolderCrawler folderCrawler = new FolderCrawler("./");
             Stream<Path> paths = folderCrawler.createPathStream();
@@ -62,8 +78,8 @@ public class Uploader {
 
             Region region = Region.EU_NORTH_1;
             S3Client s3Client = S3Client.builder().region(region).build();
-            s3Client.putObject(PutObjectRequest.builder().bucket(bucketName).key(blob_name).build(), Path.of("./test.zip"));
-            File file=new File("./test.zip");
+            s3Client.putObject(PutObjectRequest.builder().bucket(bucketName).key(blob_name).build(), Path.of(tempFileName));
+            File file=new File(tempFileName);
             file.delete();
 
 

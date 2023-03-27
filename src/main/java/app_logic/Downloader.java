@@ -20,13 +20,14 @@ public class Downloader {
     public static void main(String[] args) throws IOException {
         final String usage = "\n" +
                 "Usage:\n" +
-                "    <bucketName><blobName><folderPath>\n\n" +
+                "    <bucketName><blobName><folderPath><filePath>\n\n" +
                 "Where:\n" +
                 "    bucketName - The Amazon S3 bucket to delete the policy from (for example, bucket1).\n"+
                 "    blobName - the filename of the S3 blob file"+
-                "    folderPath - path to the folder to be uploaded";
+                "    folderPath - path to the folder to be uploaded"+
+                "    filePath - relative file path of single file to download";
 
-        if (args.length != 3) {
+        if (args.length < 3|| args.length > 4) {
             System.out.println(usage);
             System.exit(1);
         }
@@ -57,10 +58,17 @@ public class Downloader {
         object.close();
         outputStream.close();
 
-                buffer = new byte[1024];
+
+        buffer = new byte[1024];
         ZipInputStream zis = new ZipInputStream(new FileInputStream(tempFileName));
-        ZipEntry zipEntry = zis.getNextEntry();
-        while (zipEntry != null) {
+        ZipEntry zipEntry;
+
+        while ((zipEntry = zis.getNextEntry())!= null) {
+            if (args.length==4){
+                if (!zipEntry.getName().equals(args[3])){
+                        continue;
+                }
+            }
             File newFile = newFile(path.toFile(), zipEntry);
             if (zipEntry.isDirectory()) {
                 if (!newFile.isDirectory() && !newFile.mkdirs()) {
@@ -81,7 +89,7 @@ public class Downloader {
                 }
                 fos.close();
             }
-            zipEntry = zis.getNextEntry();
+            //zipEntry = zis.getNextEntry();
         }
 
         zis.closeEntry();

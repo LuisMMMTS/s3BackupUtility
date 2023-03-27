@@ -17,13 +17,7 @@ public class Uploader {
 
     public static void main(String[] args) throws IOException {
 
-        final String usage = "\n" +
-                "Usage:\n" +
-                "    <bucketName><blobName><folderPath>\n\n" +
-                "Where:\n" +
-                "    bucketName - The Amazon S3 bucket to delete the policy from (for example, bucket1).\n"+
-                "    blobName - the filename of the S3 blob file"+
-                "    folderPath - path to the folder to be uploaded";
+        final String usage = "\n" + "Usage:\n" + "    <bucketName><blobName><folderPath>\n\n" + "Where:\n" + "    bucketName - The Amazon S3 bucket to delete the policy from (for example, bucket1).\n" + "    blobName - the filename of the S3 blob file" + "    folderPath - path to the folder to be uploaded";
 
         if (args.length != 3) {
             System.out.println(usage);
@@ -32,47 +26,43 @@ public class Uploader {
 
         String bucketName = args[0];
         String blob_name = args[1];
-        System.setProperty("user.dir",args[2]);
-        String tempFileName= String.valueOf(System.currentTimeMillis())+".zip";
+        System.setProperty("user.dir", args[2]);
+        String tempFileName = System.currentTimeMillis() + ".zip";
         try (FileOutputStream in = new FileOutputStream(tempFileName); ZipOutputStream zip = new ZipOutputStream(new BufferedOutputStream(in))) {
 
             FolderCrawler folderCrawler = new FolderCrawler("./");
             Stream<Path> paths = folderCrawler.createPathStream();
 
-            paths.filter(x -> !x.toString().equals("."))
-                    .map(x -> Path.of(x.toString()
-                            .replace("./", "")))
-                    .filter(x->!x.toString().contains(tempFileName))
-                    .forEach(node -> {
-                        try {
-                            byte[] byteArray = new byte[0];
-                            boolean isDir = node.toFile().isDirectory();
-                            String fileName = node.toString();
-                            if (isDir) {
-                                if (folderCrawler.folderIsEmpty(node)) {
-                                    fileName = node.toString() + "/.keep";
-                                } else {
-                                    return;
-                                }
-                            } else {
-                                //new FileStructure(node);
-                                try (FileInputStream fileReader = new FileInputStream(fileName)) {
-                                    byteArray = fileReader.readAllBytes();
-                                }
-                            }
-
-                            zip.putNextEntry(new ZipEntry(fileName));
-                            zip.write(byteArray, 0, byteArray.length);
-                            zip.closeEntry();
-                            zip.flush();
-                            //in.flush();
-
-                        } catch (Exception e) {
-                            System.out.println(e);
+            paths.filter(x -> !x.toString().equals(".")).map(x -> Path.of(x.toString().replace("./", ""))).filter(x -> !x.toString().contains(tempFileName)).forEach(node -> {
+                try {
+                    byte[] byteArray = new byte[0];
+                    boolean isDir = node.toFile().isDirectory();
+                    String fileName = node.toString();
+                    if (isDir) {
+                        if (folderCrawler.folderIsEmpty(node)) {
+                            fileName = node + "/.keep";
+                        } else {
+                            return;
                         }
+                    } else {
+                        //new FileStructure(node);
+                        try (FileInputStream fileReader = new FileInputStream(fileName)) {
+                            byteArray = fileReader.readAllBytes();
+                        }
+                    }
+
+                    zip.putNextEntry(new ZipEntry(fileName));
+                    zip.write(byteArray, 0, byteArray.length);
+                    zip.closeEntry();
+                    zip.flush();
+                    //in.flush();
+
+                } catch (Exception e) {
+                    System.out.println(e);
+                }
 
 
-                    });
+            });
             zip.close();
             in.close();
 
@@ -80,7 +70,7 @@ public class Uploader {
             Region region = Region.EU_NORTH_1;
             S3Client s3Client = S3Client.builder().region(region).build();
             s3Client.putObject(PutObjectRequest.builder().bucket(bucketName).key(blob_name).build(), Path.of(tempFileName));
-            File file=new File(tempFileName);
+            File file = new File(tempFileName);
             file.delete();
 
 
@@ -91,7 +81,6 @@ public class Uploader {
 
 
 }
-
 
 
 //TODO:authenticate in S3

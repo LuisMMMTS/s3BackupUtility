@@ -5,17 +5,14 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
-import java.io.BufferedOutputStream;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Path;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 
-public class Main {
+public class Uploader {
     private final static int CHUNK_SIZE = 5 * 1024 * 1024;
 
     public static void main(String[] args) throws IOException {
@@ -35,11 +32,11 @@ public class Main {
                             boolean isDir = node.toFile().isDirectory();
                             String fileName = node.toString();
                             if (isDir) {
-                                fileName += "/";
-                        /*if (folderCrawler.folderIsEmpty(node)) {
-                            File nf = new File(node.toString() + "/.keep");
-                            nf.createNewFile();
-                        }*/
+                                if (folderCrawler.folderIsEmpty(node)) {
+                                    fileName=node.toString() + "/.keep";
+                                }else{
+                                    return;
+                                }
                             } else {
                                 //new FileStructure(node);
                                 try (FileInputStream fileReader = new FileInputStream(fileName)) {
@@ -61,9 +58,13 @@ public class Main {
                     });
             zip.close();
             in.close();
+
+
             Region region = Region.EU_NORTH_1;
             S3Client s3Client = S3Client.builder().region(region).build();
             s3Client.putObject(PutObjectRequest.builder().bucket(bucketName).key(blob_name).build(), Path.of("./test.zip"));
+            File file=new File("./test.zip");
+            file.delete();
 
 
         }

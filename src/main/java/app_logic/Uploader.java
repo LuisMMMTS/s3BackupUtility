@@ -42,6 +42,7 @@ public class Uploader {
             paths.filter(x -> !x.toString().equals("."))
                     .map(x -> Path.of(x.toString()
                             .replace("./", "")))
+                    .filter(x->!x.toString().contains(tempFileName))
                     .forEach(node -> {
                         try {
                             byte[] byteArray = new byte[0];
@@ -49,8 +50,8 @@ public class Uploader {
                             String fileName = node.toString();
                             if (isDir) {
                                 if (folderCrawler.folderIsEmpty(node)) {
-                                    fileName=node.toString() + "/.keep";
-                                }else{
+                                    fileName = node.toString() + "/.keep";
+                                } else {
                                     return;
                                 }
                             } else {

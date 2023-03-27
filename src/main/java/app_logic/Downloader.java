@@ -1,5 +1,6 @@
 package app_logic;
 
+import app_logic.model.FolderCrawler;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -56,7 +57,7 @@ public class Downloader {
         object.close();
         outputStream.close();
 
-        buffer = new byte[1024];
+                buffer = new byte[1024];
         ZipInputStream zis = new ZipInputStream(new FileInputStream(tempFileName));
         ZipEntry zipEntry = zis.getNextEntry();
         while (zipEntry != null) {
@@ -82,8 +83,11 @@ public class Downloader {
             }
             zipEntry = zis.getNextEntry();
         }
+
         zis.closeEntry();
         zis.close();
+        new File(tempFileName).delete();
     }
+
 
 }

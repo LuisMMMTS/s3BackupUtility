@@ -1,12 +1,17 @@
 package app_logic.model;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import java.io.FileOutputStream;
+import java.io.ObjectOutputStream;
 
 public class FolderCrawler {
     private String basePath;

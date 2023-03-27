@@ -1,6 +1,5 @@
-package org.model;
+package app_logic.model;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -21,5 +20,14 @@ public class FolderCrawler {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+    public boolean folderIsEmpty(Path path) throws IOException {
+        if (Files.isDirectory(path)) {
+            try (Stream<Path> entries = Files.list(path)) {
+                return !entries.findFirst().isPresent();
+            }
+        }
+
+        return false;
     }
 }

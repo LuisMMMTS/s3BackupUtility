@@ -62,6 +62,9 @@ public class Uploader {
                     if (isDir) {
                         if (folderCrawler.folderIsEmpty(node)) {
                             fileName = node + "/.keep";
+                            File f=new File(fileName);
+                            f.createNewFile();
+                            f.deleteOnExit();
                         } else {
                             return;
                         }
@@ -72,6 +75,7 @@ public class Uploader {
                         }
                     }
                     FileStructure fileStructure = new FileStructure(Path.of(fileName));
+
 
                     oos.writeObject(fileStructure);
                     oos.flush();

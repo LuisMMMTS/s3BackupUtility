@@ -1,15 +1,23 @@
 package app_logic;
 
+import app_logic.model.FileStructure;
 import app_logic.model.FolderCrawler;
+import app_logic.model.S3;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.*;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+
+import static app_logic.model.S3.sendPart;
 
 
 public class Uploader {
@@ -28,7 +36,19 @@ public class Uploader {
         String blob_name = args[1];
         System.setProperty("user.dir", args[2]);
         String tempFileName = System.currentTimeMillis() + ".zip";
-        try (FileOutputStream in = new FileOutputStream(tempFileName); ZipOutputStream zip = new ZipOutputStream(new BufferedOutputStream(in))) {
+
+        Region region = Region.EU_NORTH_1;
+        S3Client s3Client = S3Client.builder().region(region).build();
+        CreateMultipartUploadResponse uploader = s3Client.createMultipartUpload(CreateMultipartUploadRequest.builder().bucket(bucketName).key(blob_name).build());
+        List<CompletedPart> completedParts = new ArrayList<CompletedPart>();
+
+
+        try (PipedInputStream in=new PipedInputStream();
+             ByteArrayOutputStream bos = new ByteArrayOutputStream();
+             //PipedOutputStream out = new PipedOutputStream(in);
+             //ObjectInputStream ois=new ObjectInputStream(in);
+             ObjectOutputStream oos=new ObjectOutputStream(bos);
+        ) {
 
             FolderCrawler folderCrawler = new FolderCrawler("./");
             Stream<Path> paths = folderCrawler.createPathStream();
@@ -38,6 +58,7 @@ public class Uploader {
                     byte[] byteArray = new byte[0];
                     boolean isDir = node.toFile().isDirectory();
                     String fileName = node.toString();
+                    FileStructure file;
                     if (isDir) {
                         if (folderCrawler.folderIsEmpty(node)) {
                             fileName = node + "/.keep";
@@ -50,28 +71,44 @@ public class Uploader {
                             byteArray = fileReader.readAllBytes();
                         }
                     }
+                    FileStructure fileStructure = new FileStructure(Path.of(fileName));
 
-                    zip.putNextEntry(new ZipEntry(fileName));
-                    zip.write(byteArray, 0, byteArray.length);
-                    zip.closeEntry();
-                    zip.flush();
-                    //in.flush();
+                    oos.writeObject(fileStructure);
+                    oos.flush();
+                    //out.flush();
+
+
+                    while (bos.size()>=CHUNK_SIZE){
+                        //byte[] buffer = new byte[CHUNK_SIZE];
+                        //in.read(buffer);
+                        completedParts.add(sendPart(s3Client,uploader,bucketName,blob_name, completedParts.size()+1, bos.toByteArray()));
+                        bos.reset();
+                    }
+
 
                 } catch (Exception e) {
                     System.out.println(e);
                 }
 
 
+
             });
-            zip.close();
-            in.close();
-
-
-            Region region = Region.EU_NORTH_1;
-            S3Client s3Client = S3Client.builder().region(region).build();
-            s3Client.putObject(PutObjectRequest.builder().bucket(bucketName).key(blob_name).build(), Path.of(tempFileName));
-            File file = new File(tempFileName);
-            file.delete();
+            oos.close();
+            //out.close();
+            while (bos.size()!=0){
+                //byte[] buffer = new byte[CHUNK_SIZE];
+                //byte[] buffer=in.readAllBytes();
+                completedParts.add(sendPart(s3Client,uploader,bucketName,blob_name, completedParts.size()+1, bos.toByteArray()));
+                bos.reset();
+            }
+            bos.close();
+            CompletedMultipartUpload completedMultipartUpload = CompletedMultipartUpload.builder().parts(completedParts).build();
+            CompleteMultipartUploadResponse completedUploadResponse = s3Client.completeMultipartUpload(
+                    CompleteMultipartUploadRequest.builder()
+                            .bucket(bucketName)
+                            .key(blob_name)
+                            .uploadId(uploader.uploadId())
+                            .multipartUpload(completedMultipartUpload).build());
 
 
         }

@@ -18,3 +18,6 @@ This can be improved in some ways:
 - refactoring of the code
 - usage of threads for the time intensive task of uploading/downloading whilst streaming the local data in another thread
 - usage of checksum functions provided by aws SDK
+
+
+added a test comment
